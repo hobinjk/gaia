@@ -16,6 +16,7 @@
     "alarms": {},
     "telephony": {},
     "storage": {},
+    "webapps-manage": {},
     "audio-channel-notification":{}
   },
   "activities": {

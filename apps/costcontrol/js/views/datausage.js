@@ -327,6 +327,8 @@ var DataUsageTab = (function() {
   var today = Toolkit.toMidnight(new Date());
   var CHART_BG_RATIO = 0.87;
   function expandModel(base) {
+    debug('Model data wifi samples: ' + base.data.wifi.samples.toSource());
+    debug('Model data mobile samples: ' + base.data.mobile.samples.toSource());
 
     // Update today
     today = Toolkit.toMidnight(new Date());

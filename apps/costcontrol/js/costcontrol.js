@@ -469,6 +469,8 @@ var CostControl = (function() {
       var mobileData = adaptData(simRequest ? simRequest.result :
                                               fakeEmptyResult);
 
+      debug('Mobile data: ' + mobileData.toSource());
+
       var lastDataUsage = {
         timestamp: new Date(),
         start: start,
@@ -523,8 +525,12 @@ var CostControl = (function() {
     var data = networkStatsResult.data;
     var output = [];
     var totalData, accum = 0;
+
     for (var i = 0; i < data.length; i++) {
       var item = data[i];
+      debug('item: ' + item + ' <' + item.toSource() + '>');
+      debug('item.appId: ' + item.appManifestURL);
+
       if (item.txBytes === undefined) {
         output.push({ date: item.date });
         continue;
@@ -542,6 +548,7 @@ var CostControl = (function() {
 
       output.push({
         value: totalData,
+        appManifestURL: item.appManifestURL,
         date: item.date
       });
     }

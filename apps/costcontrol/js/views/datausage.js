@@ -19,6 +19,7 @@ var DataUsageTab = (function() {
   var wifiOverview, mobileOverview;
   var wifiToggle, mobileToggle;
   var wifiItem, mobileItem;
+  var appSelect, selectedApp;
 
   var costcontrol, initialized, model;
 
@@ -48,6 +49,7 @@ var DataUsageTab = (function() {
       mobileToggle = document.getElementById('mobileCheck');
       warningLayer = document.getElementById('warning-layer');
       limitsLayer = document.getElementById('limits-layer');
+      appSelect = document.getElementById('app-select');
 
       window.addEventListener('localized', localize);
 
@@ -55,6 +57,7 @@ var DataUsageTab = (function() {
       document.addEventListener('visibilitychange', updateWhenVisible);
       wifiToggle.addEventListener('click', toggleWifi);
       mobileToggle.addEventListener('click', toggleMobile);
+      appSelect.addEventListener('change', changeSelectedApp);
 
       resetButtonState();
 
@@ -88,7 +91,8 @@ var DataUsageTab = (function() {
               },
               mobile: {
                 enabled: true
-              }
+              },
+              apps: []
             }
           };
           ConfigManager.observe('dataLimit', toggleDataLimit, true);
@@ -195,6 +199,7 @@ var DataUsageTab = (function() {
           model.data.wifi.total = modelData.wifi.total;
           model.data.mobile.samples = modelData.mobile.samples;
           model.data.mobile.total = modelData.mobile.total;
+          model.data.apps = modelData.apps;
           model.limits.enabled = settings.dataLimit;
           model.limits.value = getLimitInBytes(settings);
           model.axis.X.upper = calculateUpperDate(settings);
@@ -376,6 +381,13 @@ var DataUsageTab = (function() {
     base.limits.warningValue = base.limits.value * base.limits.warning;
   }
 
+  function changeSelectedApp() {
+    var selectedAppManifest = appSelect.value;
+    // TODO something using selected app manifest
+    selectedApp = selectedAppManifest;
+    console.log('now displaying stuff for: ' + selectedApp);
+  }
+
   function updateUI() {
     // Update overview
     var wifiData = Formatting.roundData(model.data.wifi.total);
@@ -391,6 +403,8 @@ var DataUsageTab = (function() {
     drawMobileGraphic(model);
     drawWarningOverlay(model);
     drawLimits(model);
+
+    updateAppSelect(model);
   }
 
   function drawBackgroundLayer(model) {
@@ -847,6 +861,25 @@ var DataUsageTab = (function() {
       model.originX, 0,
       model.axis.X.len + 0.5, limitValueExceeded
     );
+  }
+
+  function updateAppSelect(model) {
+    var currentAppOptions = appSelect.querySelectorAll('.app-option');
+    var i;
+    for(i = 0; i < currentAppOptions.length; i++) {
+      var currentAppOption = currentAppOptions[i];
+      currentAppOption.parentNode.removeChild(currentAppOption);
+    }
+    var frag = document.createDocumentFragment();
+    for(i = 0; i < model.data.apps.length; i++) {
+      var app = model.data.apps[i];
+      var optionElement = document.createElement('option');
+      optionElement.value = app.manifestURL;
+      optionElement.textContent = app.name;
+      optionElement.classList.add('app-option');
+      frag.appendChild(optionElement);
+    }
+    appSelect.appendChild(frag);
   }
 
   return {

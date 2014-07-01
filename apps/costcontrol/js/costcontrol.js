@@ -528,11 +528,12 @@ var CostControl = (function() {
 
     for (var i = 0; i < data.length; i++) {
       var item = data[i];
-      debug('item: ' + item + ' <' + item.toSource() + '>');
-      debug('item.appId: ' + item.appManifestURL);
 
       if (item.txBytes === undefined) {
-        output.push({ date: item.date });
+        output.push({
+          date: item.date,
+          appManifestURL: item.appManifestURL
+        });
         continue;
       }
 

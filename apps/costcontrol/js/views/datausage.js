@@ -22,6 +22,7 @@ var DataUsageTab = (function() {
   var appSelect, selectedApp;
 
   var costcontrol, initialized, model;
+  var installedApps = {};
 
   var DEVICE_RATIO = window.devicePixelRatio || 1;
   function toDevicePixels(origin) {
@@ -91,8 +92,7 @@ var DataUsageTab = (function() {
               },
               mobile: {
                 enabled: true
-              },
-              apps: []
+              }
             }
           };
           ConfigManager.observe('dataLimit', toggleDataLimit, true);
@@ -106,6 +106,19 @@ var DataUsageTab = (function() {
         });
       });
     });
+
+    var getAllRequest = navigator.mozApps.mgmt.getAll();
+    getAllRequest.onsuccess = function(event) {
+      var appsList = event.target.result;
+      for (var i = 0; i < appsList.length; i++) {
+        var app = appsList[i];
+        installedApps[app.manifestURL] = app;
+      }
+      // Update if data has already been received
+      if (model.data.wifi.samples || model.data.mobile.samples) {
+        updateAppList(model);
+      }
+    };
   }
 
   function localize() {
@@ -199,7 +212,6 @@ var DataUsageTab = (function() {
           model.data.wifi.total = modelData.wifi.total;
           model.data.mobile.samples = modelData.mobile.samples;
           model.data.mobile.total = modelData.mobile.total;
-          model.data.apps = modelData.apps;
           model.limits.enabled = settings.dataLimit;
           model.limits.value = getLimitInBytes(settings);
           model.axis.X.upper = calculateUpperDate(settings);
@@ -332,9 +344,6 @@ var DataUsageTab = (function() {
   var today = Toolkit.toMidnight(new Date());
   var CHART_BG_RATIO = 0.87;
   function expandModel(base) {
-    debug('Model data wifi samples: ' + base.data.wifi.samples.toSource());
-    debug('Model data mobile samples: ' + base.data.mobile.samples.toSource());
-
     // Update today
     today = Toolkit.toMidnight(new Date());
 
@@ -399,12 +408,22 @@ var DataUsageTab = (function() {
     drawBackgroundLayer(model);
     drawTodayLayer(model);
     drawAxisLayer(model);
-    drawWifiGraphic(model);
-    drawMobileGraphic(model);
+    drawSamplesGraphic(model, model.data.wifi.samples, {
+      'fillStyle': '#cbd936',
+      'strokeStyle': '#8b9052',
+      'todayMarkColor': '#8b9052',
+      'layerId': 'wifi-layer'
+    });
+    drawSamplesGraphic(model, model.data.mobile.samples, {
+      'fillStyle': 'rgba(147, 21, 98, 0.7)',
+      'strokeStyle': '#762d4a',
+      'todayMarkColor': '#762d4a',
+      'layerId': 'mobile-layer'
+    });
     drawWarningOverlay(model);
     drawLimits(model);
 
-    updateAppSelect(model);
+    updateAppList(model);
   }
 
   function drawBackgroundLayer(model) {
@@ -618,20 +637,19 @@ var DataUsageTab = (function() {
     ctx.restore();
   }
 
-  function drawWifiGraphic(model) {
-    var samples = model.data.wifi.samples;
+  function drawSamplesGraphic(model, samples, options) {
     if (!samples) {
       return;
     }
 
-    var canvas = document.getElementById('wifi-layer');
+    var canvas = document.getElementById(options.layerId);
     canvas.height = model.height;
-    canvas.width = model.width;
+    var width = canvas.width = model.width;
     var ctx = canvas.getContext('2d');
 
     // Style
-    ctx.fillStyle = '#cbd936';
-    ctx.strokeStyle = '#8b9052';
+    ctx.fillStyle = options.fillStyle;
+    ctx.strokeStyle = options.strokeStyle;
     ctx.lineWidth = toDevicePixels(2);
     ctx.lineJoin = 'round';
     ctx.moveTo(model.originX, model.originY);
@@ -642,20 +660,28 @@ var DataUsageTab = (function() {
 
     var sum = 0; var x, y = model.originY;
     var lastX = model.originX, lastY = model.axis.Y.get(sum);
+    // Only dealing with the use cases of negative UTC offset because, due to
+    // the database granularity, the returned samples are given in UTC days, and
+    // we don't know what part of the traffic sample values correspond to the
+    // current localtime day.  The query for the samples is generated on the
+    // costcontrol module, and  the case into which the returned samples only
+    // have one record with the data for the localtime day of yesterday is not
+    // possible.
+
     for (var i = 0, len = samples.length; i < len; i++) {
       var sample = samples[i];
       var sampleLocalTime = sample.date.getTime() + offset;
       var sampleUTCDate = Toolkit.toMidnight(new Date(sampleLocalTime));
 
       var isToday = (today.getTime() === sampleUTCDate.getTime());
-      var isTomorrow = (today.getTime() + DAY ===  sampleUTCDate.getTime());
+      var isTomorrow = (today.getTime() + DAY === sampleUTCDate.getTime());
       var thereIsATomorrowSample = (isToday && (i + 2 === len));
       // Depends on the hour of the day and the offset, it is possible the
       // networkStats API returns the current data mobile in the  tomorrow
       // sample, because on the UTC hour is another day.
       if (thereIsATomorrowSample) {
         // Join the value of the samples for today and tomorrow
-        var tomorrowSample = samples[i+1];
+        var tomorrowSample = samples[i + 1];
         if (typeof sample.value === 'undefined') {
           sample.value = tomorrowSample.value;
         } else if (typeof tomorrowSample.value !== 'undefined') {
@@ -687,13 +713,18 @@ var DataUsageTab = (function() {
         lastY = y;
       }
 
-      var onlyExistTomorrowSample = (i===0 && isTomorrow);
+      var onlyExistTomorrowSample = (i === 0 && isTomorrow);
       var isXInsideTheGraph = (x >= model.originX);
       if ((isToday || onlyExistTomorrowSample) && isXInsideTheGraph) {
-        drawTodayMark(ctx, x, y, '#8b9052');
+        drawTodayMark(ctx, x, y, options.todayMarkColor);
         return;
       }
     }
+
+    var pattern = ctx.createPattern(graphicPattern, 'repeat');
+    ctx.globalCompositeOperation = 'source-atop';
+    ctx.fillStyle = pattern;
+    ctx.fillRect(0, 0, width, model.originY);
   }
 
   function drawTodayMark(ctx, x, y, color) {
@@ -731,95 +762,6 @@ var DataUsageTab = (function() {
       ctx.lineTo(x1Fixed, y1);
       ctx.stroke();
     }
-  }
-
-  function drawMobileGraphic(model) {
-    var samples = model.data.mobile.samples;
-    if (!samples) {
-      return;
-    }
-
-    var canvas = document.getElementById('mobile-layer');
-    canvas.height = model.height;
-    var width = canvas.width = model.width;
-    var ctx = canvas.getContext('2d');
-
-    ctx.fillStyle = 'rgba(147, 21, 98, 0.7)';
-    ctx.strokeStyle = '#762d4a';
-    ctx.lineWidth = toDevicePixels(2);
-    ctx.lineJoin = 'round';
-
-    var today = Toolkit.toMidnight(new Date());
-    // offset in milliseconds
-    var offset = today.getTimezoneOffset() * 60 * 1000;
-
-    var sum = 0; var x, y = model.originY;
-    var lastX = model.originX, lastY = model.axis.Y.get(sum);
-    // Only dealing with the use cases of negative UTC offset because, due to
-    // the database granularity, the returned samples are given in UTC days, and
-    // we don't know what part of the traffic sample values correspond to the
-    // current localtime day.  The query for the samples is generated on the
-    // costcontrol module, and  the case into which the returned samples only
-    // have one record with the data for the localtime day of yesterday is not
-    // possible.
-
-    for (var i = 0, len = samples.length; i < len; i++) {
-      var sample = samples[i];
-      var sampleLocalTime = sample.date.getTime() + offset;
-      var sampleUTCDate = Toolkit.toMidnight(new Date(sampleLocalTime));
-
-      var isToday = (today.getTime() === sampleUTCDate.getTime());
-      var isTomorrow = (today.getTime() + DAY ===  sampleUTCDate.getTime());
-      var thereIsATomorrowSample = (isToday && (i + 2 === len));
-      // Depends on the hour of the day and the offset, it is possible the
-      // networkStats API returns the current data mobile in the tomorrow
-      // sample, because on the UTC hour is another day.
-      if (thereIsATomorrowSample) {
-        // Join the value of the samples for today and tomorrow
-        var tomorrowSample = samples[i+1];
-        if (typeof sample.value === 'undefined') {
-          sample.value = tomorrowSample.value;
-        } else if (typeof tomorrowSample.value !== 'undefined') {
-          sample.value += tomorrowSample.value;
-        }
-
-        if (i === 0) {
-          lastX = model.axis.X.get(sample.date);
-        }
-        i++;
-      }
-
-      if (typeof sample.value === 'undefined') {
-        lastX = x = model.axis.X.get(sample.date);
-        ctx.moveTo(x, y);
-
-      } else {
-        if (i === 0) {
-          lastX = model.axis.X.get(sample.date);
-        }
-
-        sum += sample.value;
-        x = model.axis.X.get(sample.date);
-        y = model.axis.Y.get(sum);
-
-        clipAndDrawSegment(ctx, model, lastX, lastY, x, y);
-
-        lastX = x;
-        lastY = y;
-      }
-
-      var onlyExistTomorrowSample = (i===0 && isTomorrow);
-      var isXInsideTheGraph = (x >= model.originX);
-      if ((isToday || onlyExistTomorrowSample) && isXInsideTheGraph) {
-        drawTodayMark(ctx, x, y, '#762d4a');
-        return;
-      }
-    }
-
-    var pattern = ctx.createPattern(graphicPattern, 'repeat');
-    ctx.globalCompositeOperation = 'source-atop';
-    ctx.fillStyle = pattern;
-    ctx.fillRect(0, 0, width, model.originY);
   }
 
   function drawWarningOverlay(model) {
@@ -863,23 +805,54 @@ var DataUsageTab = (function() {
     );
   }
 
-  function updateAppSelect(model) {
+  function updateAppList(model) {
+    if (!model) {
+      return;
+    }
     var currentAppOptions = appSelect.querySelectorAll('.app-option');
     var i;
-    for(i = 0; i < currentAppOptions.length; i++) {
+    for (i = 0; i < currentAppOptions.length; i++) {
       var currentAppOption = currentAppOptions[i];
       currentAppOption.parentNode.removeChild(currentAppOption);
     }
     var frag = document.createDocumentFragment();
-    for(i = 0; i < model.data.apps.length; i++) {
-      var app = model.data.apps[i];
+    var allSamples = model.data.wifi.samples.concat(model.data.mobile.samples);
+    var urls = Object.keys(getSamplesByURL(allSamples));
+
+    for (i = 0; i < urls.length; i++) {
+      var appURL = urls[i];
       var optionElement = document.createElement('option');
-      optionElement.value = app.manifestURL;
-      optionElement.textContent = app.name;
+      optionElement.value = appURL;
+      optionElement.textContent = getAppName(appURL);
       optionElement.classList.add('app-option');
       frag.appendChild(optionElement);
     }
     appSelect.appendChild(frag);
+  }
+
+  function getSamplesByURL(samples) {
+    var samplesByURL = {};
+
+    for (var i = 0; i < samples.length; i++) {
+      var sample = samples[i];
+      if (!samplesByURL[sample.appManifestURL]) {
+        samplesByURL[sample.appManifestURL] = [];
+      }
+      samplesByURL[sample.appManifestURL].push(sample);
+    }
+
+    return samplesByURL;
+  }
+
+  function getAppName(manifestURL) {
+    if (manifestURL === '') {
+      return 'System';
+    }
+
+    if (installedApps[manifestURL]) {
+      return installedApps[manifestURL].manifest.name;
+    }
+    return '';
   }
 
   return {

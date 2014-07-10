@@ -45,6 +45,11 @@
   left: auto;
 }
 
+/* App usage list */
+#datausage-tab .app-usage-list {
+  list-style: none;
+  font-size: 2rem;
+}
 
 /* Color legend (square) */
 #datausage-tab .toggle-data li:before {

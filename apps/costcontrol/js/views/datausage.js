@@ -19,7 +19,7 @@ var DataUsageTab = (function() {
   var wifiOverview, mobileOverview;
   var wifiToggle, mobileToggle;
   var wifiItem, mobileItem;
-  var appSelect, selectedApp;
+  var appUsageList;
 
   var costcontrol, initialized, model;
   var installedApps = {};
@@ -50,7 +50,7 @@ var DataUsageTab = (function() {
       mobileToggle = document.getElementById('mobileCheck');
       warningLayer = document.getElementById('warning-layer');
       limitsLayer = document.getElementById('limits-layer');
-      appSelect = document.getElementById('app-select');
+      appUsageList = document.getElementById('app-usage-list');
 
       window.addEventListener('localized', localize);
 
@@ -58,7 +58,6 @@ var DataUsageTab = (function() {
       document.addEventListener('visibilitychange', updateWhenVisible);
       wifiToggle.addEventListener('click', toggleWifi);
       mobileToggle.addEventListener('click', toggleMobile);
-      appSelect.addEventListener('change', changeSelectedApp);
 
       resetButtonState();
 
@@ -388,13 +387,6 @@ var DataUsageTab = (function() {
     // Limits
     base.limits.warning = costcontrol.getDataUsageWarning();
     base.limits.warningValue = base.limits.value * base.limits.warning;
-  }
-
-  function changeSelectedApp() {
-    var selectedAppManifest = appSelect.value;
-    // TODO something using selected app manifest
-    selectedApp = selectedAppManifest;
-    console.log('now displaying stuff for: ' + selectedApp);
   }
 
   function updateUI() {
@@ -809,25 +801,72 @@ var DataUsageTab = (function() {
     if (!model) {
       return;
     }
-    var currentAppOptions = appSelect.querySelectorAll('.app-option');
-    var i;
-    for (i = 0; i < currentAppOptions.length; i++) {
-      var currentAppOption = currentAppOptions[i];
-      currentAppOption.parentNode.removeChild(currentAppOption);
-    }
     var frag = document.createDocumentFragment();
     var allSamples = model.data.wifi.samples.concat(model.data.mobile.samples);
-    var urls = Object.keys(getSamplesByURL(allSamples));
-
-    for (i = 0; i < urls.length; i++) {
-      var appURL = urls[i];
-      var optionElement = document.createElement('option');
-      optionElement.value = appURL;
-      optionElement.textContent = getAppName(appURL);
-      optionElement.classList.add('app-option');
-      frag.appendChild(optionElement);
+    var samplesByURL = getSamplesByURL(allSamples);
+    var urls = Object.keys(samplesByURL);
+    var totalsByURL = {};
+    for (var i = 0; i < urls.length; i++) {
+      var url = urls[i];
+      var total = getTotalUsage(samplesByURL[url]);
+      totalsByURL[url] = total;
     }
-    appSelect.appendChild(frag);
+
+    // Sort in order of total usage, descending
+    urls.sort(function(urlA, urlB) {
+      var totalA = totalsByURL[urlA];
+      var totalB = totalsByURL[urlB];
+      if (totalA < totalB) {
+        return 1;
+      } else if (totalA > totalB) {
+        return -1;
+      }
+      return 0;
+    });
+
+    urls.forEach(function(appURL) {
+      var optionElement = createAppItem(appURL, totalsByURL[appURL]);
+      frag.appendChild(optionElement);
+    });
+
+    window.requestAnimationFrame(function() {
+      // Remove all currently listed apps
+      appUsageList.innerHTML = '';
+      // Replace with updated app usage elements
+      appUsageList.appendChild(frag);
+    });
+  }
+
+  function createAppItem(appURL, appUsage) {
+    // image with app's icon
+    // p with app name
+    // p with app formatted usage
+
+    var name = getAppName(appURL);
+    var formattedUsage = Formatting.formatData(Formatting.roundData(appUsage));
+
+    var container = document.createElement('li');
+    container.classList.add('app-usage-item');
+    var nameElement = document.createElement('p');
+    nameElement.classList.add('app-usage-name');
+    nameElement.textContent = name;
+
+    var usageElement = document.createElement('p');
+    usageElement.classList.add('app-usage-usage');
+    usageElement.classList.add('meta');
+    usageElement.textContent = formattedUsage;
+
+    container.appendChild(nameElement);
+    container.appendChild(usageElement);
+
+    return container;
+  }
+
+  function getTotalUsage(samples) {
+    var totalData = samples.reduce(function(total, sample) {
+      return total + sample.value;
+    }, 0);
+    return totalData;
   }
 
   function getSamplesByURL(samples) {
@@ -852,7 +891,7 @@ var DataUsageTab = (function() {
     if (installedApps[manifestURL]) {
       return installedApps[manifestURL].manifest.name;
     }
-    return '';
+    return 'Unknown App';
   }
 
   return {

@@ -15,10 +15,9 @@ var DataUsageTab = (function() {
   var NEVER_ANCHOR = 21 * DAY;
 
   var graphicArea, graphicPattern;
-  var wifiLayer, mobileLayer, warningLayer, limitsLayer;
-  var wifiOverview, mobileOverview;
-  var wifiToggle, mobileToggle;
-  var wifiItem, mobileItem;
+  var mobileLayer, warningLayer, limitsLayer;
+  var mobileOverview;
+  var mobileItem;
   var appUsageList;
 
   var costcontrol, initialized, model;
@@ -40,14 +39,9 @@ var DataUsageTab = (function() {
       // HTML entities
       graphicArea = document.getElementById('graphic-area');
       graphicPattern = document.getElementById('graphic-pattern');
-      wifiLayer = document.getElementById('wifi-layer');
       mobileLayer = document.getElementById('mobile-layer');
       mobileItem = document.getElementById('mobileItem');
-      wifiItem = document.getElementById('wifiItem');
-      wifiOverview = document.getElementById('wifiOverview');
       mobileOverview = document.getElementById('mobileOverview');
-      wifiToggle = document.getElementById('wifiCheck');
-      mobileToggle = document.getElementById('mobileCheck');
       warningLayer = document.getElementById('warning-layer');
       limitsLayer = document.getElementById('limits-layer');
       appUsageList = document.getElementById('app-usage-list');
@@ -56,8 +50,6 @@ var DataUsageTab = (function() {
 
       // Update and chart visibility
       document.addEventListener('visibilitychange', updateWhenVisible);
-      wifiToggle.addEventListener('click', toggleWifi);
-      mobileToggle.addEventListener('click', toggleMobile);
 
       resetButtonState();
 
@@ -86,11 +78,7 @@ var DataUsageTab = (function() {
               value: getLimitInBytes(settings)
             },
             data: {
-              wifi: {
-                enabled: true
-              },
               mobile: {
-                enabled: true
               }
             }
           };
@@ -114,7 +102,7 @@ var DataUsageTab = (function() {
         installedApps[app.manifestURL] = app;
       }
       // Update if data has already been received
-      if (model.data.wifi.samples || model.data.mobile.samples) {
+      if (model.data.mobile.samples) {
         updateAppList(model);
       }
     };
@@ -135,8 +123,6 @@ var DataUsageTab = (function() {
     }
 
     document.removeEventListener('visibilitychange', updateWhenVisible);
-    wifiToggle.removeEventListener('click', toggleWifi);
-    mobileToggle.removeEventListener('click', toggleMobile);
     ConfigManager.removeObserver('dataLimit', toggleDataLimit);
     ConfigManager.removeObserver('dataLimitValue', setDataLimit);
     ConfigManager.removeObserver('lastCompleteDataReset', updateDataUsage);
@@ -153,19 +139,6 @@ var DataUsageTab = (function() {
         var isMobileChartVisible = settings.isMobileChartVisible;
         if (typeof isMobileChartVisible === 'undefined') {
           isMobileChartVisible = true;
-        }
-        if (isMobileChartVisible !== mobileToggle.checked) {
-          mobileToggle.checked = isMobileChartVisible;
-          toggleMobile();
-        }
-
-        var isWifiChartVisible = settings.isWifiChartVisible;
-        if (typeof isWifiChartVisible === 'undefined') {
-          isWifiChartVisible = false;
-        }
-        if (isWifiChartVisible !== wifiToggle.checked) {
-          wifiToggle.checked = isWifiChartVisible;
-          toggleWifi();
         }
       });
     });
@@ -207,8 +180,6 @@ var DataUsageTab = (function() {
                                       function _onSettings(settings) {
           debug('Updating model');
           var modelData = result.data;
-          model.data.wifi.samples = modelData.wifi.samples;
-          model.data.wifi.total = modelData.wifi.total;
           model.data.mobile.samples = modelData.mobile.samples;
           model.data.mobile.total = modelData.mobile.total;
           model.limits.enabled = settings.dataLimit;
@@ -311,34 +282,6 @@ var DataUsageTab = (function() {
     return Math.abs(a - b) <= threshold;
   }
 
-  // USER INTERFACE
-
-  // On tapping on wifi toggle
-  function toggleWifi() {
-    var isChecked = wifiToggle.checked;
-    wifiLayer.setAttribute('aria-hidden', !isChecked);
-    wifiItem.setAttribute('aria-disabled', !isChecked);
-    // save wifi toggled state
-    ConfigManager.setOption({ isWifiChartVisible: isChecked });
-  }
-
-  // On tapping on mobile toggle
-  function toggleMobile() {
-    var isChecked = mobileToggle.checked;
-    mobileLayer.setAttribute('aria-hidden', !isChecked);
-    warningLayer.setAttribute('aria-hidden', !isChecked);
-    limitsLayer.setAttribute('aria-hidden', !isChecked);
-    mobileItem.setAttribute('aria-disabled', !isChecked);
-    // save wifi toggled state
-    ConfigManager.setOption({ isMobileChartVisible: isChecked });
-
-    if (model) {
-      drawBackgroundLayer(model);
-      drawAxisLayer(model);
-      drawLimits(model);
-    }
-  }
-
   // Expand the model with some computed values
   var today = Toolkit.toMidnight(new Date());
   var CHART_BG_RATIO = 0.87;
@@ -370,8 +313,7 @@ var DataUsageTab = (function() {
     // Y max value
     var limitEnabled = true; // XXX: model.limits.enabled;
     base.axis.Y.maxValue = Math.max(limitEnabled ? base.limits.value : 0,
-                                    base.data.mobile.total,
-                                    base.data.wifi.total);
+                                    base.data.mobile.total);
 
     // Y axis projection function and automatic values
     base.axis.Y.range = base.axis.Y.upper - base.axis.Y.lower;
@@ -391,21 +333,13 @@ var DataUsageTab = (function() {
 
   function updateUI() {
     // Update overview
-    var wifiData = Formatting.roundData(model.data.wifi.total);
     var mobileData = Formatting.roundData(model.data.mobile.total);
-    wifiOverview.textContent = Formatting.formatData(wifiData);
     mobileOverview.textContent = Formatting.formatData(mobileData);
 
     // Render the charts
     drawBackgroundLayer(model);
     drawTodayLayer(model);
     drawAxisLayer(model);
-    drawSamplesGraphic(model, model.data.wifi.samples, {
-      'fillStyle': '#cbd936',
-      'strokeStyle': '#8b9052',
-      'todayMarkColor': '#8b9052',
-      'layerId': 'wifi-layer'
-    });
     drawSamplesGraphic(model, model.data.mobile.samples, {
       'fillStyle': 'rgba(147, 21, 98, 0.7)',
       'strokeStyle': '#762d4a',
@@ -435,7 +369,7 @@ var DataUsageTab = (function() {
     var limitY = model.axis.Y.get(model.limits.value);
     ctx.strokeStyle = '#e0e0e0';
     ctx.lineWidth = toDevicePixels(1);
-    var displayLimit = model.limits.enabled && mobileToggle.checked;
+    var displayLimit = model.limits.enabled;
     for (var y = model.originY - step; y > step; y -= step) {
       if (displayLimit && same(y, limitY, 0.1)) {
         continue;
@@ -532,7 +466,7 @@ var DataUsageTab = (function() {
     var offsetX = model.originX - marginRight;
     ctx.font = makeCSSFontString(FONTSIZE, FONTWEIGHT_AXIS);
     ctx.textAlign = 'right';
-    var displayLimit = mobileToggle.checked && model.limits.enabled;
+    var displayLimit = model.limits.enabled;
     var lastUnit;
     for (var y = 0.5 + model.originY, value = 0;
          y > step; y -= step, value += dataStep) {
@@ -600,7 +534,7 @@ var DataUsageTab = (function() {
     canvas.width = model.width;
     var ctx = canvas.getContext('2d');
 
-    var displayLimit = mobileToggle.checked && model.limits.enabled;
+    var displayLimit = model.limits.enabled;
     if (!displayLimit) {
       return;
     }
@@ -802,7 +736,7 @@ var DataUsageTab = (function() {
       return;
     }
     var frag = document.createDocumentFragment();
-    var allSamples = model.data.wifi.samples.concat(model.data.mobile.samples);
+    var allSamples = model.data.mobile.samples;
     var samplesByURL = getSamplesByURL(allSamples);
     var urls = Object.keys(samplesByURL);
     var totalsByURL = {};

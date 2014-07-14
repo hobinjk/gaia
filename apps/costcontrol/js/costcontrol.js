@@ -411,7 +411,7 @@ var CostControl = (function() {
   }
 
   // XXX: pending on bug XXX to get statistics by SIM
-  // Ask statistics API for mobile and wifi data usage
+  // Ask statistics API for mobile data usage
   var DAY = 24 * 3600 * 1000; // 1 day
   function requestDataStatistics(configuration, settings, callback, dataSimIcc,
                                  result) {
@@ -449,38 +449,23 @@ var CostControl = (function() {
       end = new Date(start.getTime() + DAY);
     }
 
-    var wifiInterface = Common.getWifiInterface();
     var currentSimcardNetwork = Common.getDataSIMInterface(dataSimIcc.iccId);
 
-    var simRequest, wifiRequest;
-    var pendingRequests = 0;
-
-    function checkForCompletion() {
-      pendingRequests--;
-      if (pendingRequests === 0) {
-        updateDataUsage();
-      }
-    }
+    var simRequest;
 
     function updateDataUsage() {
       var fakeEmptyResult = {data: []};
-      var wifiData = adaptData(wifiRequest ? wifiRequest.result :
-                                             fakeEmptyResult);
       var mobileData = adaptData(simRequest ? simRequest.result :
                                               fakeEmptyResult);
-
-      debug('Mobile data: ' + mobileData.toSource());
 
       var lastDataUsage = {
         timestamp: new Date(),
         start: start,
         end: end,
         today: today,
-        wifi: {
-          total: wifiData[1]
-        },
         mobile: {
-          total: mobileData[1]
+          total: mobileData[1],
+          samples: mobileData[0]
         }
       };
 
@@ -491,8 +476,6 @@ var CostControl = (function() {
       );
 
       // XXX: Enrich with the samples because I can not store them
-      lastDataUsage.wifi.samples = wifiData[0];
-      lastDataUsage.mobile.samples = mobileData[0];
       result.status = 'success';
       result.data = lastDataUsage;
       debug('Returning up to date statistics.');
@@ -503,21 +486,11 @@ var CostControl = (function() {
 
     //Recover current Simcard info
     if (currentSimcardNetwork) {
-      pendingRequests++;
       simRequest = statistics.getSamples(currentSimcardNetwork, start, end);
-      simRequest.onsuccess = checkForCompletion;
-    }
-
-    if (wifiInterface) {
-      pendingRequests++;
-      wifiRequest = statistics.getSamples(wifiInterface, start, end);
-      wifiRequest.onsuccess = checkForCompletion;
-    }
-
-    if (pendingRequests === 0) {
+      simRequest.onsuccess = updateDataUsage;
+    } else {
       updateDataUsage();
     }
-
   }
 
   // Transform data usage to the model accepted by the render

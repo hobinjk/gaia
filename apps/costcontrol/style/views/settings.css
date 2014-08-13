@@ -128,3 +128,22 @@
 #plantype-settings li span {
   margin: 0;
 }
+
+.data-usage-form {
+  position: absolute;
+  width: 100%;
+  height: 3rem;
+}
+
+.data-usage-unit {
+  float: right;
+  margin: 0;
+  width: 9rem;
+}
+
+.data-usage-input {
+  text-align: right;
+  font-weight: 500;
+  font-size: 2.4rem;
+  width: calc(100% - 10rem);
+}

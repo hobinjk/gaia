@@ -3,7 +3,7 @@
   <head>
     <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1">
     <meta charset="utf-8">
-    <title>Usage Settings</title>
+    <title>Settings</title>
 
     <!-- Building blocks -->
     <link rel="stylesheet" type="text/css" href="shared/style/buttons.css">
@@ -38,112 +38,50 @@
       <section role="region" id="settings-view" class="view">
         <header data-theme="organic">
           <menu type="toolbar">
-             <button id="close-settings" data-l10n-id="done">done</button>
+             <button id="close-settings" data-l10n-id="done">Done</button>
           </menu>
           <h1 data-l10n-id="settings">Settings</h1>
         </header>
 
         <!-- Plantype -->
         <section class="view-scroll" role="region">
-          <ul id="plantype-settings" class="settings" aria-hidden="true">
-           <li>
-            <span class="button icon icon-dialog fake-select">
-              <select id="widget-plantype" class="settings-option" data-option="plantype">
-               <option value="prepaid" data-l10n-id="prepaid">Prepaid</option>
-               <option value="postpaid" data-l10n-id="postpaid">Postpaid</option>
-              </select>
-            </span>
-           </li>
-          </ul>
-
-          <!-- Phone activity -->
-          <header id="phone-activity-settings" aria-hidden="true">
-            <h2 data-l10n-id="phone-activity">Phone Activity</h2>
-          </header>
-          <ul class="settings" aria-hidden="true">
-            <li>
-              <div class="end buttons-list">
-                <button data-l10n-id="reset" id="reset-telephony">Reset</button>
-              </div>
-              <p>
-                <span id="calltime"></span> <span id="smscount"></span>
-              </p>
-              <p id="telephony-timestamp"></p>
-            </li>
-          </ul>
-
-          <!-- Balance alerts -->
-          <header id="balance-settings" aria-hidden="true">
-            <h2 data-l10n-id="balance">Balance</h2>
-          </header>
-          <ul class="settings" aria-hidden="true">
-            <li>
-                <p id="balance"></p>
-                <p class="meta"></p>
-            </li>
-            <li>
-              <label class="pack-switch end">
-                <input class="settings-option" data-option="lowLimit" type="checkbox" id="low-limit" />
-                <span></span>
-              </label>
-              <p data-l10n-id="low-balance-alert">Low balance alert</p>
-            </li>
-            <li>
-              <label class="end" for="low-limit-input">
-                <span id="settings-low-limit-currency"></span>
-                <input class="settings-option" data-option="lowLimitThreshold" data-disable-on="lowLimit=false" id="low-limit-input" type="number" step="any" />
-              </label>
-              <p data-l10n-id="low-balance-explanation2">When balance is below</p>
-            </li>
-          </ul>
-
-          <!-- Data usage limits -->
-          <header id="data-usage-settings">
-            <h2 data-l10n-id="data-usage">Data Usage</h2>
-          </header>
-          <ul class="settings">
-            <li>
-              <p id="mobile-data-usage">
-                <span class="usage"></span> <span data-l10n-id="mobile-usage-settings">Mobile usage</span>
-              </p>
-              <p id="wifi-data-usage">
-                <span class="usage"></span> <span data-l10n-id="wifi-usage-settings">Wi-Fi usage</span>
-              </p>
-              <p class="meta"></p>
-              <button data-l10n-id="reset" id="reset-data-usage">Reset</button>
-            </li>
-            <li>
-              <label class="pack-switch end">
-                <input class="settings-option" data-option="dataLimit" type="checkbox"/>
-                <span></span>
-              </label>
-              <p data-l10n-id="data-limit-alert">Data use alert</p>
-            </li>
-            <li>
-              <p data-l10n-id="data-limit-value2">When use is above</p>
-              <button class="settings-option icon icon-dialog" data-widget-type="data-limit" data-disable-on="dataLimit=false">
-                <span class="tag"></span>
-              </button>
-            </li>
-          </ul>
-
-          <!-- Tracking period -->
-          <header id="phone-internet-settings" aria-hidden="true">
-            <h2 data-l10n-id="internet-data-report">Internet data report</h2>
+          <header>
+            <h2 data-l10n-id="data-plan-information">Data Plan Information</h2>
           </header>
           <ul class="settings">
             <li class="reset-entry">
-              <p data-l10n-id="reset-report">Reset report</p>
+              <p data-l10n-id="reset-report">Type</p>
               <span class="button icon icon-dialog fake-select">
                  <select class="settings-option" data-option="trackingPeriod">
                    <option value="monthly" data-l10n-id="monthly">Monthly</option>
                    <option value="weekly" data-l10n-id="weekly">Weekly</option>
-                   <option value="never" data-l10n-id="never">Never</option>
+                   <option value="daily" data-l10n-id="daily">Daily</option>
+                   <option value="unlimited" data-l10n-id="unlimited">Unlimited</option>
                  </select>
               </span>
             </li>
             <li class="reset-entry">
-              <p data-l10n-id="starting-on">Starting on</p>
+              <p class="settings-option"
+                 data-l10n-id="limit-per-week"
+                 data-hide-on="trackingPeriod!=weekly">Limit per week</p>
+              <p class="settings-option"
+                 data-l10n-id="limit-per-month"
+                 data-hide-on="trackingPeriod!=monthly">Limit per month</p>
+              <p class="settings-option"
+                 data-l10n-id="limit-per-day"
+                 data-hide-on="trackingPeriod!=daily">Limit per day</p>
+             </li>
+             <li class="reset-entry">
+               <div class="data-usage-form">
+                <select class="data-usage-unit">
+                  <option>MB</option>
+                  <option>GB</option>
+                </select>
+                <input type="number" class="data-usage-input" />
+              </div>
+            </li>
+            <li class="reset-entry">
+              <p data-l10n-id="starting-on">Plan start date</p>
               <span class="button icon icon-dialog fake-select">
                 <select id="select-weekday" class="settings-option" data-option="resetTime" data-hide-on="trackingPeriod!=weekly" data-disable-on="trackingPeriod!=weekly">
                   <option class="monday" value="1" data-l10n-id="monday">Monday</option>
@@ -157,9 +95,9 @@
               </span>
             </li>
             <li class="reset-entry">
-              <p data-l10n-id="starting-on">Starting on</p>
+              <p data-l10n-id="starting-on">Plan start date</p>
               <span class="button icon icon-dialog fake-select">
-                <select class="settings-option icon icon-dialog" data-option="resetTime" data-hide-on="trackingPeriod!=monthly" data-disable-on="trackingPeriod!=monthly">
+                <select id="select-day" class="settings-option icon icon-dialog" data-option="resetTime" data-hide-on="trackingPeriod!=monthly" data-disable-on="trackingPeriod!=monthly">
                   <option value="1">1</option>
                   <option value="2">2</option>
                   <option value="3">3</option>
@@ -195,62 +133,34 @@
               </span>
             </li>
           </ul>
-        </section>
-      </section>
 
-      <!-- Data usage limits -->
-      <section role="region" id="data-limit-dialog" class="view" data-viewport="bottom">
-        <header>
-          <menu type="toolbar">
-            <button id="data-usage-done-button" data-l10n-id="done" class="recommend">Done</button>
-          </menu>
-          <a class="cancel"><span id="data-usage-close-button" class="icon icon-close">close</span></a>
-          <h1 data-l10n-id="data-limit-header">Data Usage Limit</h1>
-        </header>
-        <section class="content">
-          <div class="info">
-            <h2 data-l10n-id="data-limit-dialog-title2">Enter a mobile data limit alert</h2>
-            <p data-l10n-id="data-limit-dialog-explanation2">
-              Connection speeds reduce after the limit is reached. Check with your data provider to set an appropriate alert level.
-            </p>
-          </div>
-        </section>
-        <form>
-          <ul class="buttons-list">
+          <!-- Data usage limits -->
+          <header id="data-usage-settings">
+            <h2 data-l10n-id="data-usage">Usage Alerts</h2>
+          </header>
+          <ul class="settings">
             <li>
-              <button type="button" class="icon icon-dialog switch-unit-button">
-                <span class="tag"></span>
-              </button>
+              <label class="pack-switch end">
+                <input class="settings-option" data-option="dataLimit" type="checkbox"/>
+                <span></span>
+              </label>
+              <p data-l10n-id="data-limit-alert">Data use alert</p>
+            </li>
+            <li class="settings-option" data-hide-on="dataLimit=false">
+              <p data-l10n-id="data-limit-value2">Alert when use above</p>
+              <div class="data-usage-form">
+                <select class="data-usage-unit use-above-unit">
+                  <option>%</option>
+                  <option>GB</option>
+                  <option>MB</option>
+                </select>
+                <input class="data-usage-input" type="number" />
+              </div>
             </li>
           </ul>
-          <label for="data-limit-input">
-            <input id="data-limit-input" type="number" step="any" />
-          </label>
-        </form>
+
+        </section>
       </section>
-
-      <!-- Reset confirmation -->
-      <form role="dialog" class="view" data-type="action" data-viewport="ethereal" id="reset-data-dialog" >
-        <header data-l10n-id="reset-data-usage">Reset Data usage</header>
-        <menu>
-          <button type="button" id="reset-data-mobile-usage" data-l10n-id="reset-mobile">Reset mobile data</button>
-          <button type="button" id="reset-data-wifi-usage" data-l10n-id="reset-wifi">Reset Wi-Fi data</button>
-          <button type="button" id="reset-all-data-usage" data-l10n-id="reset-all-data-usage">Reset mobile & Wi-Fi data</button>
-
-          <button type="button" data-l10n-id="cancel" class="close-reset-dialog">Cancel</button>
-        </menu>
-      </form>
-    <!-- Reset confirmation -->
-      <form role="dialog" class="view" data-type="confirm" data-viewport="ethereal" id="reset-telephony-dialog">
-          <section>
-              <h1 data-l10n-id="confirmation">Confirmation</h1>
-              <p data-l10n-id="reset-confirmation-warning">All current data will be deleted. Are you sure you want to reset?</p>
-          </section>
-          <menu>
-              <button data-l10n-id="cancel" class="close-reset-dialog">Cancel</button>
-              <button data-l10n-id="yes" class="danger">Yes</button>
-          </menu>
-      </form>
     </section>
   </body>
 </html>

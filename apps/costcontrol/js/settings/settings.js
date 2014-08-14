@@ -52,7 +52,7 @@ var Settings = (function() {
             }
           });
         },
-        true
+        false
       );
 
       // Update layout when changing plantype
@@ -91,7 +91,9 @@ var Settings = (function() {
   }
 
   function closeSettings() {
-    window.parent.location.hash = '#';
+    var hash = window.parent.location.hash;
+    hash = hash.replace(/#settings-view/, '');
+    window.parent.location.hash = hash;
   }
 
   window.addEventListener('localized', function _onLocalize() {

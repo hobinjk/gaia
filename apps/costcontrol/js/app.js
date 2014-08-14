@@ -1,4 +1,4 @@
-/* global BalanceTab, ConfigManager, Common, NonReadyScreen, SimManager,
+/* global BalanceTab, ConfigManager, NonReadyScreen, SimManager,
           debug, CostControl, TelephonyTab, ViewManager, LazyLoader,
           PerformanceTestingHelper, AirplaneModeHelper, setNextReset */
 /* exported CostControlApp */
@@ -196,7 +196,7 @@ var CostControlApp = (function() {
     }
 
     if (thereIsNextReset) {
-      window.addEventListener('messagehandlerready',  function _setNextReset() {
+      window.addEventListener('messagehandlerready', function _setNextReset() {
         window.removeEventListener('messagehandlerready', _setNextReset);
         setNextReset(ConfigManager.option('nextReset'));
       });
@@ -218,10 +218,6 @@ var CostControlApp = (function() {
     }
 
     CostControl.getInstance(function _onCostControlReady(instance) {
-      if (ConfigManager.option('fte')) {
-        startFTE();
-        return;
-      }
       loadMessageHandler();
 
       costcontrol = instance;
@@ -400,30 +396,6 @@ var CostControlApp = (function() {
 
   function isDataUsageTabShown() {
     return window.location.hash.split('#')[1] === 'datausage-tab';
-  }
-
-  function startFTE() {
-    window.addEventListener('message', function handler_finished(e) {
-      if (e.origin !== Common.COST_CONTROL_APP) {
-        return;
-      }
-
-      var type = e.data.type;
-
-      if (type === 'fte_finished') {
-        window.removeEventListener('message', handler_finished);
-        document.getElementById('splash_section').
-          setAttribute('aria-hidden', 'true');
-
-        // Only hide the FTE view when everything in the UI is ready
-        ConfigManager.requestAll(function() {
-          startApp(Common.closeFTE);
-        });
-      }
-    });
-
-    var mode = ConfigManager.getApplicationMode();
-    Common.startFTE(mode);
   }
 
   function initApp() {

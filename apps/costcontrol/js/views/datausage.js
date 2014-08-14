@@ -32,6 +32,30 @@ var DataUsageTab = (function() {
       return;
     }
 
+    ConfigManager.observe('fte', function toggleFteShown(fteEnabled) {
+      var fte = document.getElementById('datausage-fte');
+      var norm = document.getElementById('datausage-normal');
+      fte.setAttribute('aria-hidden', !fteEnabled);
+      norm.setAttribute('aria-hidden', fteEnabled);
+      [].forEach.call(
+        document.querySelectorAll('.settings-button'),
+        function(btn) {
+          btn.addEventListener('click', function() {
+            ConfigManager.setOption({ fte: false }, function() {
+              initialized = false;
+              setupTab();
+            });
+            window.location.hash += '#settings-view';
+            event.stopPropagation();
+          }, true);
+        }
+      );
+    }, false);
+
+    if (ConfigManager.option('fte')) {
+      return;
+    }
+
     CostControl.getInstance(function _onCostControl(instance) {
       costcontrol = instance;
 
@@ -632,14 +656,14 @@ var DataUsageTab = (function() {
       var sampleUTCDate = Toolkit.toMidnight(new Date(sampleLocalTime));
 
       var isToday = (today.getTime() === sampleUTCDate.getTime());
-      var isTomorrow = (today.getTime() + DAY ===  sampleUTCDate.getTime());
+      var isTomorrow = (today.getTime() + DAY === sampleUTCDate.getTime());
       var thereIsATomorrowSample = (isToday && (i + 2 === len));
       // Depends on the hour of the day and the offset, it is possible the
       // networkStats API returns the current data mobile in the  tomorrow
       // sample, because on the UTC hour is another day.
       if (thereIsATomorrowSample) {
         // Join the value of the samples for today and tomorrow
-        var tomorrowSample = samples[i+1];
+        var tomorrowSample = samples[i + 1];
         if (typeof sample.value === 'undefined') {
           sample.value = tomorrowSample.value;
         } else if (typeof tomorrowSample.value !== 'undefined') {
@@ -671,7 +695,7 @@ var DataUsageTab = (function() {
         lastY = y;
       }
 
-      var onlyExistTomorrowSample = (i===0 && isTomorrow);
+      var onlyExistTomorrowSample = (i === 0 && isTomorrow);
       var isXInsideTheGraph = (x >= model.originX);
       if ((isToday || onlyExistTomorrowSample) && isXInsideTheGraph) {
         drawTodayMark(ctx, x, y, '#8b9052');
@@ -753,14 +777,14 @@ var DataUsageTab = (function() {
       var sampleUTCDate = Toolkit.toMidnight(new Date(sampleLocalTime));
 
       var isToday = (today.getTime() === sampleUTCDate.getTime());
-      var isTomorrow = (today.getTime() + DAY ===  sampleUTCDate.getTime());
+      var isTomorrow = (today.getTime() + DAY === sampleUTCDate.getTime());
       var thereIsATomorrowSample = (isToday && (i + 2 === len));
       // Depends on the hour of the day and the offset, it is possible the
       // networkStats API returns the current data mobile in the tomorrow
       // sample, because on the UTC hour is another day.
       if (thereIsATomorrowSample) {
         // Join the value of the samples for today and tomorrow
-        var tomorrowSample = samples[i+1];
+        var tomorrowSample = samples[i + 1];
         if (typeof sample.value === 'undefined') {
           sample.value = tomorrowSample.value;
         } else if (typeof tomorrowSample.value !== 'undefined') {
@@ -792,7 +816,7 @@ var DataUsageTab = (function() {
         lastY = y;
       }
 
-      var onlyExistTomorrowSample = (i===0 && isTomorrow);
+      var onlyExistTomorrowSample = (i === 0 && isTomorrow);
       var isXInsideTheGraph = (x >= model.originX);
       if ((isToday || onlyExistTomorrowSample) && isXInsideTheGraph) {
         drawTodayMark(ctx, x, y, '#762d4a');

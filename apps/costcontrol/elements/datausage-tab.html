@@ -1,7 +1,17 @@
 <element name="datausage-tab" extends="section">
   <template>
+    <div class="view-scroll" id="datausage-fte" aria-hidden="true">
+      <section class="content">
+        <header>
+          <h2>Save data and control usage</h2>
+        </header>
+        <p class="fte-info">Usage tracking helps save money on data costs. It can help you
+        understand how your data is being used and keep you in control.</p>
+        <button class="settings-button fte-button">Configure usage tracking</button>
+      </section>
+    </div>
 
-    <div class="view-scroll">
+    <div class="view-scroll" id="datausage-normal">
       <section class="content">
         <section id="graphic-area" class="graph">
           <canvas id="background-layer"></canvas>

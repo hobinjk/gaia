@@ -50,6 +50,7 @@ var ViewManager = (function() {
                                      this._currentView.id : null;
 
     var view = document.getElementById(viewId);
+    console.log('changing view to ' + viewId + ' is ' + view);
 
     // lazy load HTML of the panel
     this.loadPanel(view);

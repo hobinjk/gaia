@@ -121,13 +121,13 @@
   margin: 0;
 }
 
-.data-usage-unit {
+#settings-view .data-usage-unit {
   float: right;
   margin: 0;
   width: 9rem;
 }
 
-.data-usage-input {
+#settings-view .data-usage-input {
   text-align: right;
   font-weight: 500;
   font-size: 2.4rem;

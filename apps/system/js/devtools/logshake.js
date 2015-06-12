@@ -103,7 +103,7 @@
       debug('handling capture-logs-success');
       navigator.vibrate(100);
       this._notify('logsSaved', 'logsSavedBody',
-                   this.triggerShareLogs.bind(this, event.detail.logFilenames),
+                   this.triggerShareLogs.bind(this, event.detail.zipFilename),
                    event.detail);
       this._shakeId = null;
     },
@@ -129,10 +129,8 @@
       return navigator.getDeviceStorage('sdcard');
     },
 
-    triggerShareLogs: function(logFilenames, notif) {
-      var logFiles = [];
+    triggerShareLogs: function(zipFilename, notif) {
       var storage = this.getDeviceStorage();
-      var requestsRemaining = logFilenames.length;
       var self = this;
 
       if (notif) {
@@ -141,25 +139,21 @@
 
       function onSuccess() {
         /* jshint validthis: true */
-        logFiles.push(this.result);
-        requestsRemaining -= 1;
-        if (requestsRemaining === 0) {
-          var logNames = logFiles.map(function(file) {
-            // For some reason file.name contains the full path despite
-            // File's documentation explicitly stating the opposite.
-            var pathComponents = file.name.split('/');
-            return pathComponents[pathComponents.length - 1];
-          });
-          /* jshint nonew: false */
-          new MozActivity({
-            name: 'share',
-            data: {
-              type: 'application/vnd.moz-systemlog',
-              blobs: logFiles,
-              filenames: logNames
-            }
-          });
-        }
+        var zipFile = this.result;
+        // For some reason file.name contains the full path despite
+        // File's documentation explicitly stating the opposite.
+        var pathComponents = zipFile.name.split('/');
+        var zipFilename = pathComponents[pathComponents.length - 1];
+
+        /* jshint nonew: false */
+        new MozActivity({
+          name: 'share',
+          data: {
+            type: 'application/vnd.moz-systemlog',
+            blobs: [zipFile],
+            filenames: [zipFilename]
+          }
+        });
       }
 
       function onError() {
@@ -167,11 +161,9 @@
         self.handleCaptureLogsError({detail: {error: this.error}});
       }
 
-      for (var logFilename of logFilenames) {
-        var req = storage.get(logFilename);
-        req.onsuccess = onSuccess;
-        req.onerror = onError;
-      }
+      var req = storage.get(zipFilename);
+      req.onsuccess = onSuccess;
+      req.onerror = onError;
     },
 
     ERRNO_TO_MSG: {
@@ -255,8 +247,8 @@
       var payload = message.data.logshakePayload;
       if ('error' in payload) {
         this.showErrorMessage(payload.error);
-      } else if ('logFilenames' in payload) {
-        this.triggerShareLogs(payload.logFilenames);
+      } else if ('zipFilename' in payload) {
+        this.triggerShareLogs(payload.zipFilename);
       } else {
         console.warn('Unidentified payload: ' + JSON.stringify(payload));
       }

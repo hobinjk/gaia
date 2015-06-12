@@ -158,14 +158,16 @@ suite('system/LogShake', function() {
   });
 
   suite('Capture success handling', function() {
-    var filename = 'logs/2014-06-03-00-00/log.log';
+    var logFilenames = ['log.log', 'bog.log', 'fog.log', 'cog.log', 'dog.log',
+                        'eggnog.log'];
+    var zipFilename = 'logs/2014-06-03-00-00-logs.zip';
     var notificationSpy;
 
     setup(function() {
       notificationSpy = this.sinon.spy(window, 'Notification');
 
       window.dispatchEvent(new CustomEvent('capture-logs-success',
-        { detail: { logFilenames: [filename]  } }));
+        { detail: { logFilenames: logFilenames, zipFilename: zipFilename } }));
     });
 
     test('Notification sent', function() {
@@ -191,16 +193,15 @@ suite('system/LogShake', function() {
 
       assert.isTrue(storageSpy.calledOnce, 'getDeviceStorage should be called');
       assert.isTrue(getSpy.calledOnce, '.get() should be called');
-      assert.equal(getSpy.firstCall.args[0], filename,
-        '.get() should have been called with filename from event');
+      assert.equal(getSpy.firstCall.args[0], zipFilename,
+        '.get() should have been called with archive filename from event');
       sinon.assert.calledOnce(closeSpy);
     });
 
     test('triggerShareLogs launches MozActivity', function() {
-      var filename = 'dev-log-main.log';
       var mockBlob = {
-        type: 'text/plain',
-        name: 'logs/timestamp/dev-log-main.log'
+        type: 'archive/zip',
+        name: zipFilename
       };
 
       var expectedActivity = {
@@ -208,7 +209,7 @@ suite('system/LogShake', function() {
         data: {
           type: 'application/vnd.moz-systemlog',
           blobs: [ mockBlob ],
-          filenames: [ filename ]
+          filenames: [ zipFilename ]
         }
       };
 
@@ -218,7 +219,7 @@ suite('system/LogShake', function() {
       var getSpy = this.sinon.spy(mockDeviceStorage, 'get');
       var activitySpy = this.sinon.spy(window, 'MozActivity');
 
-      logshake.triggerShareLogs([ filename ]);
+      logshake.triggerShareLogs(zipFilename);
 
       // Simulate success of reading file
       var getRequest = getSpy.getCall(0).returnValue;
@@ -410,12 +411,15 @@ suite('system/LogShake', function() {
     suite('handleSystemMessageNotification behavior', function() {
       test('calls triggerShareLogs for success cases', function() {
         var triggerShareLogsSpy = this.sinon.spy(logshake, 'triggerShareLogs');
-        notification.data.logshakePayload = { logFilenames: [] };
+        notification.data.logshakePayload = {
+          logFilenames: [],
+          zipFilename: ''
+        };
         logshake.handleSystemMessageNotification(notification);
         assert.isTrue(triggerShareLogsSpy.calledOnce);
         assert.isTrue(
           triggerShareLogsSpy.calledWith(
-            notification.data.logshakePayload.logFilenames));
+            notification.data.logshakePayload.zipFilename));
         delete notification.data.logshakePayload;
       });
 

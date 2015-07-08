@@ -26,6 +26,8 @@
         this.newPrivateWindow.bind(this));
       window.addEventListener('activity-view',
         this.handleActivity.bind(this));
+      window.addEventListener('activity-open',
+        this.handleActivityOpen.bind(this));
     },
 
     handleActivity: function(e) {
@@ -42,6 +44,15 @@
           });
           break;
       }
+    },
+
+    handleActivityOpen: function(e) {
+      console.log('handleActivityOpen');
+      var objectURL = URL.createObjectURL(e.detail.source.data.blobs[0]);
+      var config = new BrowserConfigHelper({url: objectURL});
+      config.oop = true;
+      var newApp = new AppWindow(config);
+      newApp.requestOpen();
     },
 
     /**

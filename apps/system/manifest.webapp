@@ -94,6 +94,8 @@
           "patternFlags": "i"
         }
       }
+    },
+    "open": {
     }
   },
   "messages": [

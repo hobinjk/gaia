@@ -96,6 +96,9 @@
       }
     },
     "open": {
+      "filters": {
+        "type": ["audio/*", "image/*", "video/*", "text/*"]
+      }
     }
   },
   "messages": [

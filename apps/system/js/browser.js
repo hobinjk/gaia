@@ -47,12 +47,9 @@
     },
 
     handleActivityOpen: function(e) {
-      console.log('handleActivityOpen');
-      var objectURL = URL.createObjectURL(e.detail.source.data.blobs[0]);
-      var config = new BrowserConfigHelper({url: objectURL});
-      config.oop = true;
-      var newApp = new AppWindow(config);
-      newApp.requestOpen();
+      var blob = e.detail.source.data.blob;
+      var objectURL = URL.createObjectURL(blob);
+      handleOpenUrl(objectURL, false);
     },
 
     /**

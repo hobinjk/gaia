@@ -48,8 +48,15 @@
 
     handleActivityOpen: function(e) {
       var blob = e.detail.source.data.blob;
-      var objectURL = URL.createObjectURL(blob);
-      handleOpenUrl(objectURL, false);
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var objectURL = e.target.result;
+        handleOpenUrl(objectURL, false);
+      };
+      reader.onerror = reader.onabort = function(error) {
+        console.error('Error reading file', error);
+      };
+      reader.readAsDataURL(blob);
     },
 
     /**
